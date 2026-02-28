@@ -195,29 +195,6 @@ export default function Log() {
                     />
                 </div>
 
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 rounded-xl border border-white/10">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-black text-slate-300">
-                            P: {dailyProtein}
-                            <span className="text-slate-500">/{proteinTarget}g</span>
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 rounded-xl border border-white/10">
-                        <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                        <span className="text-[10px] font-black text-slate-300">
-                            C: {dailyCarbs}
-                            <span className="text-slate-500">/{carbsTarget}g</span>
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 rounded-xl border border-white/10">
-                        <div className="w-2 h-2 rounded-full bg-orange-400" />
-                        <span className="text-[10px] font-black text-slate-300">
-                            F: {dailyFat}
-                            <span className="text-slate-500">/{fatTarget}g</span>
-                        </span>
-                    </div>
-                </div>
 
                 {/* Macro Row */}
                 <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-800/50">
