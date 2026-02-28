@@ -1,7 +1,15 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Pill, Clock, Check } from 'lucide-react'
+import { Pill, Clock, Check, Trash2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+
+// Reminder offset options (Fix 6)
+const OFFSET_OPTIONS = [
+    { label: 'On time', value: 0 },
+    { label: '5 min before', value: 5 },
+    { label: '10 min before', value: 10 },
+    { label: '15 min before', value: 15 },
+]
 
 interface MedicineCardProps {
     name: string
@@ -11,6 +19,11 @@ interface MedicineCardProps {
     notes?: string
     isTaken: boolean
     onTake: () => void
+    // Fix 6: optional reminder offset
+    reminderOffsetMinutes?: number
+    onOffsetChange?: (offset: number) => void
+    // Fix 1: optional remove from basket
+    onRemove?: () => void
 }
 
 export const MedicineCard: React.FC<MedicineCardProps> = ({
@@ -20,9 +33,13 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({
     totalPills,
     notes,
     isTaken,
-    onTake
+    onTake,
+    reminderOffsetMinutes = 0,
+    onOffsetChange,
+    onRemove
 }) => {
-    // Generate pill grid (up to 20 for display)
+    // Fix 5: handle zero-stock state gracefully
+    const hasStock = totalPills > 0
     const displayPills = Math.min(remainingPills, 20)
     const pillIcons = Array.from({ length: displayPills }).map((_, i) => (
         <motion.div
@@ -58,25 +75,59 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({
                         </div>
                     </div>
                 </div>
+                {onRemove && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                    >
+                        <Trash2 size={15} />
+                    </button>
+                )}
             </div>
 
             <div className="space-y-4">
-                <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
-                        <span>Stock: {remainingPills} pills</span>
-                        <span>{Math.round((remainingPills / totalPills) * 100)}% Left</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                        <AnimatePresence>
-                            {pillIcons}
-                        </AnimatePresence>
-                        {remainingPills > 20 && (
-                            <div className="text-[10px] font-black text-slate-300 self-end mb-0.5 ml-1">
-                                +{remainingPills - 20}
+                {/* Fix 5: stock display — prompt to set if 0 */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    {hasStock ? (
+                        <>
+                            <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                <span>Stock: {remainingPills} pills</span>
+                                <span>{Math.round((remainingPills / totalPills) * 100)}% Left</span>
                             </div>
-                        )}
-                    </div>
+                            <div className="flex flex-wrap gap-1">
+                                <AnimatePresence>
+                                    {pillIcons}
+                                </AnimatePresence>
+                                {remainingPills > 20 && (
+                                    <div className="text-[10px] font-black text-slate-300 self-end mb-0.5 ml-1">
+                                        +{remainingPills - 20}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-between px-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock not set</span>
+                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-wider bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">Set Stock</span>
+                        </div>
+                    )}
                 </div>
+
+                {/* Fix 6: per-medicine reminder offset selector */}
+                {onOffsetChange && (
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Remind</span>
+                        <select
+                            value={reminderOffsetMinutes}
+                            onChange={e => onOffsetChange(Number(e.target.value))}
+                            className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-transparent border-none focus:outline-none cursor-pointer"
+                        >
+                            {OFFSET_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <button
                     onClick={onTake}

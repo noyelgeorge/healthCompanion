@@ -85,7 +85,7 @@ export const AdherenceStats: React.FC<AdherenceStatsProps> = ({ history, streak 
                 </div>
             </div>
 
-            <div className="glass p-5 rounded-[2rem] bg-slate-100/50 dark:bg-slate-800/30 border-slate-200/50 dark:border-slate-700/20">
+            <div className="glass p-5 rounded-[2rem] bg-slate-100/50 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/20">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm">

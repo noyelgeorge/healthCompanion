@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Upload, FileText, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Upload, FileText, Image as ImageIcon, Loader2, Camera } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
@@ -12,6 +12,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }
     const [dragActive, setDragActive] = useState(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    // Fix 7: separate ref for camera capture
+    const cameraRef = useRef<HTMLInputElement>(null)
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault()
@@ -46,12 +48,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }
     }
 
     const isValidFile = (file: File) => {
-        const validTypes = ['image/jpeg', 'image/png', 'application/pdf']
+        const validTypes = ['image/jpeg', 'image/png', 'application/pdf', 'image/webp', 'image/heic']
         return validTypes.includes(file.type) || file.name.endsWith('.pdf')
     }
 
     const onButtonClick = () => {
         inputRef.current?.click()
+    }
+
+    // Fix 7: trigger camera capture
+    const onCameraClick = () => {
+        cameraRef.current?.click()
     }
 
     const handleConfirm = () => {
@@ -75,11 +82,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
             >
+                {/* Browse files input */}
                 <input
                     ref={inputRef}
                     type="file"
                     className="hidden"
-                    accept=".jpg,.jpeg,.png,.pdf"
+                    accept=".jpg,.jpeg,.png,.pdf,.webp,.heic"
+                    onChange={handleChange}
+                />
+
+                {/* Fix 7: Camera capture input — separate element with capture attribute */}
+                <input
+                    ref={cameraRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    capture="environment"
                     onChange={handleChange}
                 />
 
@@ -124,6 +142,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isProcessing }
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Fix 7: action buttons row — Browse + Take Photo */}
+            {!selectedFile && (
+                <div className="grid grid-cols-2 gap-3">
+                    <button
+                        onClick={onButtonClick}
+                        className="flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    >
+                        <FileText size={14} /> Browse Files
+                    </button>
+                    <button
+                        onClick={onCameraClick}
+                        className="flex items-center justify-center gap-2 py-3 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-rose-500/20 hover:bg-rose-600 active:scale-95 transition-all"
+                    >
+                        <Camera size={14} /> Take Photo
+                    </button>
+                </div>
+            )}
 
             {selectedFile && (
                 <button

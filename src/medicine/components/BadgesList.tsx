@@ -44,7 +44,7 @@ export const BadgesList = ({ badges }: BadgesListProps) => {
                         )}
 
                         {!badge.unlockedAt && (
-                            <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[1px] invisible group-hover:visible flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/5 dark:bg-slate-950/60 backdrop-blur-[1px] invisible group-hover:visible flex items-center justify-center p-4">
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Locked</span>
                             </div>
                         )}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bell, ShieldCheck, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMedicineStore } from '../store/medicineStore'
-import { format, parse, isAfter, addMinutes } from 'date-fns'
+import { format, parse, addMinutes, subMinutes } from 'date-fns'
 
 export const NotificationManager = () => {
     const {
@@ -33,28 +33,32 @@ export const NotificationManager = () => {
 
             medicines.forEach(med => {
                 const isTaken = takenToday.some(t => t.medId === med.id)
+                const scheduleTime = parse(med.schedule, 'HH:mm', now)
+                const offset = med.reminderOffsetMinutes ?? 0
 
-                // 1. Scheduled Dose Reminder (Exact time)
-                if (med.schedule === currentTime && !isTaken) {
+                // Fix 6: 1. Reminder fires at (schedule - offset) minutes
+                const reminderTime = format(subMinutes(scheduleTime, offset), 'HH:mm')
+                if (reminderTime === currentTime && !isTaken) {
+                    const label = offset > 0 ? `In ${offset} mins: ${med.name}` : `Time for ${med.name}`
                     showNotification(
-                        `Time for ${med.name}`,
+                        label,
                         `Schedule: ${med.schedule}. ${med.notes || ''}`,
                         med.id
                     )
                 }
 
-                // 2. Missed Dose Reminder (30 mins late)
-                const scheduleTime = parse(med.schedule, 'HH:mm', now)
+                // 2. Missed Dose Reminder (30 mins after scheduled time — fires on the exact threshold minute)
                 const missedThreshold = addMinutes(scheduleTime, 30)
-                if (isAfter(now, missedThreshold) && !isTaken && format(now, 'mm') === '30') {
+                const missedTime = format(missedThreshold, 'HH:mm')
+                if (missedTime === currentTime && !isTaken) {
                     showNotification(
                         `Missed Dose: ${med.name}`,
                         `You were scheduled for ${med.schedule}. Please take it as soon as possible.`,
-                        med.id
+                        `${med.id}-missed`
                     )
                 }
 
-                // 3. Low Supply Alert
+                // 3. Low Supply Alert (once at 10:00)
                 if (med.remainingPills < 5 && med.remainingPills > 0 && currentTime === '10:00') {
                     showNotification(
                         `Low Supply: ${med.name}`,
@@ -68,6 +72,7 @@ export const NotificationManager = () => {
         const interval = setInterval(checkReminders, 60000) // Check every minute
         return () => clearInterval(interval)
     }, [notificationsEnabled, medicines, takenToday])
+
 
     const showNotification = (title: string, body: string, medId: string) => {
         if ('Notification' in window && Notification.permission === 'granted') {

@@ -10,6 +10,7 @@ export interface Medicine {
     remainingPills: number
     notes?: string
     assignedTo: string // 'Me' or Family Member name
+    reminderOffsetMinutes?: number // Fix 6: 0 = on time, 5/10/15 = before
 }
 
 export interface MedicineBadge {
@@ -47,6 +48,7 @@ interface MedicineState {
     setNotificationsEnabled: (enabled: boolean) => void
     setHasRequestedPermission: (requested: boolean) => void
     updateAdherence: (date: string, taken: number, total: number) => void
+    updateMedicineOffset: (id: string, offset: number) => void // Fix 6
 }
 
 const INITIAL_BADGES: MedicineBadge[] = [
@@ -77,6 +79,7 @@ export const useMedicineStore = create<MedicineState>()(
                 medicines: state.medicines.filter(m => m.id !== id)
             })),
 
+            // Fix 2: auto-call updateAdherence after marking taken
             markTaken: (id) => {
                 const today = format(new Date(), 'yyyy-MM-dd')
                 const now = format(new Date(), 'HH:mm')
@@ -106,6 +109,10 @@ export const useMedicineStore = create<MedicineState>()(
                         badges: newBadges
                     }
                 })
+
+                // Fix 2: Auto-update adherence so stats/chart reflect real usage
+                const updated = get()
+                get().updateAdherence(today, updated.takenToday.length, updated.medicines.length)
             },
 
             updatePillCount: (id, count) => set((state) => ({
@@ -133,6 +140,11 @@ export const useMedicineStore = create<MedicineState>()(
                     adherenceHistory: [...state.adherenceHistory, { date, takenDoses: taken, totalDoses: total }].slice(-30)
                 }
             }),
+
+            // Fix 6: set reminder offset per medicine
+            updateMedicineOffset: (id, offset) => set((state) => ({
+                medicines: state.medicines.map(m => m.id === id ? { ...m, reminderOffsetMinutes: offset } : m)
+            })),
 
             resetDaily: () => {
                 const today = format(new Date(), 'yyyy-MM-dd')

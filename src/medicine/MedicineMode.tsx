@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, Plus, Clipboard, ShoppingBasket, ArrowLeft, Loader2, Search, Upload, BarChart3, Users } from 'lucide-react'
+import { Camera, Plus, Clipboard, ShoppingBasket, ArrowLeft, Loader2, Upload, BarChart3, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { cn } from '../lib/utils'
@@ -14,7 +14,6 @@ import { ProgressCard } from './components/ProgressCard'
 import { BadgesList } from './components/BadgesList'
 import { ScanReviewTab } from './components/ScanReviewTab'
 import { CameraCapture } from '../components/log/CameraCapture'
-import { FileUpload } from './components/FileUpload'
 import { FamilySelector } from './components/FamilySelector'
 import { AdherenceStats } from './components/AdherenceStats'
 import { NotificationSettings } from './components/NotificationSettings'
@@ -26,9 +25,11 @@ export default function MedicineMode() {
     const [activeTab, setActiveTab] = useState<Tab>('basket')
     const [isScanning, setIsScanning] = useState(false)
     const [showCamera, setShowCamera] = useState(false)
-    const [showUpload, setShowUpload] = useState(false)
     const [scanResults, setScanResults] = useState<ScannedMedicine[]>([])
     const [selectedFamilyMember, setSelectedFamilyMember] = useState('Me')
+    const [showQuickAdd, setShowQuickAdd] = useState(false)
+    const [qaForm, setQaForm] = useState({ name: '', time: '08:00', totalPills: 30, notes: '' })
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Local Store
     const {
@@ -41,9 +42,11 @@ export default function MedicineMode() {
         adherenceHistory,
         markTaken,
         addMedicine,
+        removeMedicine, // Fix 1
         addFamilyMember,
         setNotificationsEnabled,
-        resetDaily
+        resetDaily,
+        updateMedicineOffset  // Fix 6
     } = useMedicineStore()
 
     useEffect(() => {
@@ -52,7 +55,6 @@ export default function MedicineMode() {
 
     const handleProcessFile = async (file: File) => {
         setIsScanning(true)
-        setShowUpload(false)
         try {
             const results = await analyzeMedicineImage(file)
             if (results.length > 0) {
@@ -69,17 +71,51 @@ export default function MedicineMode() {
         }
     }
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const validTypes = ['image/jpeg', 'image/png', 'application/pdf', 'image/webp', 'image/heic']
+            if (validTypes.includes(file.type) || file.name.endsWith('.pdf')) {
+                handleProcessFile(file)
+            } else {
+                toast.error("Invalid file type. Please upload an image or PDF.")
+            }
+        }
+        // clear input so same file can be selected again
+        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
     const onConfirmScan = (med: ScannedMedicine) => {
+        // Fix 5: use extracted quantity; fall back to 0 (shows 'Set Stock' prompt)
+        const pills = med.quantity ?? 0
         addMedicine({
             name: med.name,
             schedule: med.time,
-            totalPills: 30,
-            remainingPills: 30,
+            totalPills: pills,
+            remainingPills: pills,
             notes: med.notes,
             assignedTo: selectedFamilyMember
         })
         setScanResults(prev => prev.filter(m => m.name !== med.name))
         toast.success(`${med.name} added for ${selectedFamilyMember}!`)
+    }
+
+    const handleQuickAdd = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!qaForm.name || !qaForm.time) return
+
+        addMedicine({
+            name: qaForm.name,
+            schedule: qaForm.time,
+            totalPills: Number(qaForm.totalPills),
+            remainingPills: Number(qaForm.totalPills),
+            notes: qaForm.notes || undefined,
+            assignedTo: selectedFamilyMember
+        })
+
+        toast.success(`${qaForm.name} added for ${selectedFamilyMember}!`)
+        setQaForm({ name: '', time: '08:00', totalPills: 30, notes: '' })
+        setShowQuickAdd(false)
     }
 
     // Group medicines by family member
@@ -91,7 +127,7 @@ export default function MedicineMode() {
     }, {})
 
     return (
-        <div className="page-container bg-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 pb-32 min-h-screen">
+        <div className="page-container bg-slate-50 dark:bg-slate-950 pb-32 min-h-screen">
             <NotificationManager />
 
             {/* Header */}
@@ -110,11 +146,20 @@ export default function MedicineMode() {
                 </div>
 
                 <div className="flex gap-2">
+                    {/* Fix 2: Hidden file input */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".jpg,.jpeg,.png,.pdf,.webp,.heic"
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
                     <button
-                        onClick={() => setShowUpload(true)}
-                        className="w-11 h-11 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isScanning}
+                        className="w-11 h-11 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-center hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"
                     >
-                        <Upload size={18} />
+                        {isScanning ? <Loader2 size={18} className="animate-spin text-indigo-500" /> : <Upload size={18} />}
                     </button>
                     <button
                         onClick={() => setShowCamera(true)}
@@ -188,10 +233,67 @@ export default function MedicineMode() {
                                         <div className="w-1.5 h-6 bg-rose-500 rounded-full"></div>
                                         <h2 className="font-black text-slate-800 dark:text-white uppercase tracking-tight text-sm">Schedule</h2>
                                     </div>
-                                    <button className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:underline flex items-center gap-1">
-                                        <Search size={12} /> Database
+                                    <button
+                                        onClick={() => setShowQuickAdd(!showQuickAdd)}
+                                        className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:underline flex items-center gap-1"
+                                    >
+                                        <Plus size={12} /> {showQuickAdd ? 'Close' : 'Add Medicine'}
                                     </button>
                                 </div>
+
+                                <AnimatePresence>
+                                    {showQuickAdd && (
+                                        <motion.form
+                                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                            onSubmit={handleQuickAdd}
+                                            className="glass p-5 rounded-[2rem] border-slate-100 dark:border-slate-800 overflow-hidden"
+                                        >
+                                            <div className="grid gap-3">
+                                                <input
+                                                    required
+                                                    autoFocus
+                                                    value={qaForm.name}
+                                                    onChange={e => setQaForm(p => ({ ...p, name: e.target.value }))}
+                                                    placeholder="Medicine Name *"
+                                                    className="w-full px-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400"
+                                                />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input
+                                                        type="time"
+                                                        required
+                                                        value={qaForm.time}
+                                                        onChange={e => setQaForm(p => ({ ...p, time: e.target.value }))}
+                                                        className="w-full px-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        min={1}
+                                                        value={qaForm.totalPills || ''}
+                                                        onChange={e => setQaForm(p => ({ ...p, totalPills: Number(e.target.value) }))}
+                                                        placeholder="Pills"
+                                                        className="w-full px-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400"
+                                                    />
+                                                </div>
+                                                <input
+                                                    value={qaForm.notes}
+                                                    onChange={e => setQaForm(p => ({ ...p, notes: e.target.value }))}
+                                                    placeholder="Notes (optional)"
+                                                    className="w-full px-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-400"
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                className="w-full py-3 mt-3 bg-indigo-500 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Plus size={14} /> Add to Basket
+                                            </button>
+                                        </motion.form>
+                                    )}
+                                </AnimatePresence>
 
                                 {medicines.length === 0 ? (
                                     <div className="glass p-12 rounded-[2.5rem] bg-indigo-50/5 border-dashed border-2 border-indigo-100 dark:border-indigo-900/30 flex flex-col items-center justify-center text-center space-y-4">
@@ -221,6 +323,9 @@ export default function MedicineMode() {
                                                             notes={med.notes}
                                                             isTaken={takenToday.some(t => t.medId === med.id)}
                                                             onTake={() => markTaken(med.id)}
+                                                            reminderOffsetMinutes={med.reminderOffsetMinutes ?? 0}
+                                                            onOffsetChange={(offset) => updateMedicineOffset(med.id, offset)}
+                                                            onRemove={() => removeMedicine(med.id)} // Fix 1
                                                         />
                                                     ))}
                                                 </div>
@@ -275,34 +380,6 @@ export default function MedicineMode() {
                 </AnimatePresence>
             </div>
 
-            {/* Manual Upload Modal Overlay */}
-            <AnimatePresence>
-                {showUpload && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="glass bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-white dark:border-slate-800"
-                        >
-                            <button
-                                onClick={() => setShowUpload(false)}
-                                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                            >
-                                <X size={20} />
-                            </button>
-
-                            <div className="mb-6">
-                                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Manual Upload</h2>
-                                <p className="text-xs text-slate-500 font-medium">Upload a photo or PDF of your prescription.</p>
-                            </div>
-
-                            <FileUpload onUpload={handleProcessFile} isProcessing={isScanning} />
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
             {showCamera && (
                 <CameraCapture
                     onCapture={handleProcessFile}
@@ -314,21 +391,3 @@ export default function MedicineMode() {
     )
 }
 
-function X({ size, className }: { size?: number, className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size || 24}
-            height={size || 24}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-        </svg>
-    )
-}
