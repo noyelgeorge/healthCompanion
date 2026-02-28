@@ -1,0 +1,8 @@
+﻿
+D:\NOYEL\pwa_food\pwa_food\pwa\src\store\useAppStore.ts
+  225:21  error  'newStreaks' is never reassigned. Use 'const' instead  prefer-const
+  509:30  error  'e' is defined but never used                          @typescript-eslint/no-unused-vars
+
+Γ£û 2 problems (2 errors, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

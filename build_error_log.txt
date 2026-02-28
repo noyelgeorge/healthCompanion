@@ -1,0 +1,29 @@
+[36mvite v7.3.0 [32mbuilding client environment for production...[36m[39m
+transforming...
+Error: Cannot apply unknown utility class `bg-slate-50`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:21:1314)
+    at Te (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:16:36652)
+    at D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:21:355
+    at Rr (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:3:1718)
+    at _ (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:3:1377)
+    at $e (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:21:172)
+    at un (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:38:294)
+    at async cn (D:\NOYEL\pwa\node_modules\tailwindcss\dist\lib.js:38:631)
+    at async Xr (D:\NOYEL\pwa\node_modules\@tailwindcss\node\dist\index.js:10:3417)
+    at async I (D:\NOYEL\pwa\node_modules\@tailwindcss\postcss\dist\index.js:10:3977)
+[32m✓[39m 3 modules transformed.
+[31m✗[39m Build failed in 408ms
+[31merror during build:
+[31m[vite-plugin-pwa:build] [plugin vite-plugin-pwa:build] src/index.css (1:0): There was an error during the build:
+  [postcss] tailwindcss: D:/NOYEL/pwa/src/index.css:1:1: Cannot apply unknown utility class `bg-slate-50`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+Additionally, handling the error in the 'buildEnd' hook caused the following error:
+  [postcss] tailwindcss: D:/NOYEL/pwa/src/index.css:1:1: Cannot apply unknown utility class `bg-slate-50`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive[31m
+file: [36mD:/NOYEL/pwa/src/index.css:1:0[31m
+    at getRollupError (file:///D:/NOYEL/pwa/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at file:///D:/NOYEL/pwa/node_modules/rollup/dist/es/shared/node-entry.js:23418:39
+    at async catchUnfinishedHookActions (file:///D:/NOYEL/pwa/node_modules/rollup/dist/es/shared/node-entry.js:22876:16)
+    at async rollupInternal (file:///D:/NOYEL/pwa/node_modules/rollup/dist/es/shared/node-entry.js:23401:5)
+    at async buildEnvironment (file:///D:/NOYEL/pwa/node_modules/vite/dist/node/chunks/config.js:33540:12)
+    at async Object.build (file:///D:/NOYEL/pwa/node_modules/vite/dist/node/chunks/config.js:33899:19)
+    at async Object.buildApp (file:///D:/NOYEL/pwa/node_modules/vite/dist/node/chunks/config.js:33896:153)
+    at async CAC.<anonymous> (file:///D:/NOYEL/pwa/node_modules/vite/dist/node/cli.js:629:3)[39m
