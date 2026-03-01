@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { ArrowLeft, Key, Download, Activity, Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Key, Download, Activity, Eye, EyeOff, ShieldCheck, ExternalLink } from "lucide-react"
 import { Button } from "../components/ui/Button"
 import { Link } from "react-router-dom"
 import { useAppStore } from "../store/useAppStore"
@@ -26,8 +26,8 @@ export default function Settings() {
     const store = useAppStore()
     const apiKey = useAppStore(state => state.apiKey)
     const setApiKey = useAppStore(state => state.setApiKey)
-    const usdaApiKey = useAppStore(state => state.usdaApiKey)
-    const setUsdaApiKey = useAppStore(state => state.setUsdaApiKey)
+    const usdaApiKey = useAppStore(state => (state as any).usdaApiKey)
+    const setUsdaApiKey = useAppStore(state => (state as any).setUsdaApiKey)
 
     const lastSyncedAt = useAppStore(state => state.lastSyncedAt)
 
@@ -234,6 +234,18 @@ export default function Settings() {
                             </div>
                         )}
 
+                        <div className="pt-1">
+                            <a
+                                href="https://aistudio.google.com/app/apikey"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-[10px] font-black text-orange-500 uppercase tracking-widest hover:underline px-1"
+                            >
+                                <ExternalLink size={12} />
+                                Get your key from Google AI Studio
+                            </a>
+                        </div>
+
                         <Button
                             onClick={handleTestKey}
                             disabled={isTestingKey || !apiKey}
@@ -249,57 +261,57 @@ export default function Settings() {
                             {isTestingKey ? "Verifying..." : keyStatus === 'valid' ? "Verified" : "Verify AI Key"}
                         </Button>
                     </div>
+                </div>
+            </div>
 
-                    {/* USDA API Key Section */}
-                    <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800/50">
-                        <div className="flex justify-between items-center px-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">USDA Food Database</label>
-                            {usdaApiKey && !isEditingUsdaKey && (
-                                <button onClick={() => setIsEditingUsdaKey(true)} className="text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:underline">Change Key</button>
-                            )}
+            {/* USDA API Key Section */}
+            <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">USDA Food Database</label>
+                    {usdaApiKey && !isEditingUsdaKey && (
+                        <button onClick={() => setIsEditingUsdaKey(true)} className="text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:underline">Change Key</button>
+                    )}
+                </div>
+
+                {(!usdaApiKey || isEditingUsdaKey) ? (
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <input
+                                type={showUsdaKey ? "text" : "password"}
+                                placeholder="Enter USDA API Key..."
+                                className="w-full p-4 bg-white/50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none transition-all font-bold text-xs pr-12 focus:ring-emerald-500/30"
+                                value={usdaApiKey || ''}
+                                onChange={(e) => setUsdaApiKey(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowUsdaKey(!showUsdaKey)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-500 transition-colors"
+                            >
+                                {showUsdaKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
-
-                        {(!usdaApiKey || isEditingUsdaKey) ? (
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <input
-                                        type={showUsdaKey ? "text" : "password"}
-                                        placeholder="Enter USDA API Key..."
-                                        className="w-full p-4 bg-white/50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none transition-all font-bold text-xs pr-12 focus:ring-emerald-500/30"
-                                        value={usdaApiKey || ''}
-                                        onChange={(e) => setUsdaApiKey(e.target.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowUsdaKey(!showUsdaKey)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-emerald-500 transition-colors"
-                                    >
-                                        {showUsdaKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                                {usdaApiKey && (
-                                    <button
-                                        onClick={() => setIsEditingUsdaKey(false)}
-                                        className="px-4 flex items-center justify-center bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
-                                    >
-                                        Done
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-sans tracking-normal">••••••••••••••••</span>
-                                        <span className="text-[8px] font-bold text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest">Key Saved Locally</span>
-                                    </div>
-                                </div>
-                                <ShieldCheck size={16} className="text-emerald-500" />
-                            </div>
+                        {usdaApiKey && (
+                            <button
+                                onClick={() => setIsEditingUsdaKey(false)}
+                                className="px-4 flex items-center justify-center bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
+                            >
+                                Done
+                            </button>
                         )}
                     </div>
-                </div>
+                ) : (
+                    <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-sans tracking-normal">••••••••••••••••</span>
+                                <span className="text-[8px] font-bold text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest">Key Saved Locally</span>
+                            </div>
+                        </div>
+                        <ShieldCheck size={16} className="text-emerald-500" />
+                    </div>
+                )}
             </div>
 
             <div className="px-4 space-y-4 pt-4">
@@ -391,7 +403,7 @@ export default function Settings() {
                                     if (window.confirm('CRITICAL ACTION: Are you absolutely sure you want to WIPE ALL YOUR DATA? This cannot be undone.')) {
                                         try {
                                             setResetting(true)
-                                            await store.wipeAllData()
+                                            await (store as any).wipeAllData()
                                             toast.success("System Purged", { description: "All historical data has been wiped." })
                                             setTimeout(() => location.reload(), 1500)
                                         } catch (e) {

@@ -17,7 +17,10 @@ import { FoodScanner } from './components/FoodScanner';
 import { Toaster } from 'sonner';
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    // Skip splash on mobile for instant startup
+    return typeof window !== 'undefined' && window.innerWidth > 768;
+  });
 
   const theme = useAppStore(state => state.theme);
 
@@ -49,11 +52,13 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (!showSplash) return;
+
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [showSplash]);
 
   if (showSplash) {
     return <Splash />;

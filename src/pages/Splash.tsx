@@ -31,13 +31,6 @@ export default function Splash() {
                     <h1 className="text-4xl font-black bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent tracking-tighter uppercase leading-none">
                         Health Companion
                     </h1>
-                    <div className="flex items-center justify-center gap-3">
-                        <div className="h-px w-8 bg-gradient-to-r from-transparent to-orange-500/50"></div>
-                        <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.5em]">
-                            V2.0 Core Active
-                        </p>
-                        <div className="h-px w-8 bg-gradient-to-l from-transparent to-orange-500/50"></div>
-                    </div>
                 </div>
 
                 {/* Loading Indicator */}

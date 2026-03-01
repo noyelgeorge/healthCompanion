@@ -188,19 +188,10 @@ export default function Stats() {
             weight: entry.weight
         }))
 
-    // Derive top 3 meals this week by calories
-    const weeklyEntries = days.flatMap(day => {
-        const dateStr = format(day, 'yyyy-MM-dd')
-        return logs[dateStr]?.entries || []
-    })
-
-    const topMeals = weeklyEntries
-        .sort((a, b) => (b.calories || 0) - (a.calories || 0))
-        .slice(0, 3)
-        .map(m => m.name)
 
     const generateShareImage = (): Promise<Blob> => {
         return new Promise((resolve, reject) => {
+            const isDark = document.documentElement.classList.contains('dark')
             const SIZE = 1080
             const canvas = document.createElement('canvas')
             canvas.width = SIZE
@@ -208,20 +199,44 @@ export default function Stats() {
             const ctx = canvas.getContext('2d')
             if (!ctx) return reject(new Error('Canvas not supported'))
 
-            // Background
-            ctx.fillStyle = '#020617'
+            // --- Theme Setup ---
+            const colors = isDark ? {
+                bg: '#020617',
+                card: 'rgba(15, 23, 42, 0.8)',
+                border: '#1e293b',
+                textPrimary: '#ffffff',
+                textSecondary: '#64748b',
+                textMuted: '#475569',
+                accent1: '#f97316', // Orange
+                accent2: '#6366f1', // Indigo
+                accent3: '#10b981', // Emerald
+                grid: 'rgba(30, 41, 59, 0.3)'
+            } : {
+                bg: '#f8fafc',
+                card: 'rgba(255, 255, 255, 0.9)',
+                border: '#e2e8f0',
+                textPrimary: '#0f172a',
+                textSecondary: '#64748b',
+                textMuted: '#94a3b8',
+                accent1: '#f97316',
+                accent2: '#4f46e5',
+                accent3: '#059669',
+                grid: 'rgba(226, 232, 240, 0.5)'
+            }
+
+            // --- Background & Gradients ---
+            ctx.fillStyle = colors.bg
             ctx.fillRect(0, 0, SIZE, SIZE)
 
-            // Gradient accent top-right
-            const gr = ctx.createRadialGradient(SIZE, 0, 0, SIZE, 0, 600)
-            gr.addColorStop(0, 'rgba(249,115,22,0.18)')
+            // Dynamic Gradients
+            const gr = ctx.createRadialGradient(SIZE, 0, 0, SIZE, 0, 800)
+            gr.addColorStop(0, isDark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.1)')
             gr.addColorStop(1, 'transparent')
             ctx.fillStyle = gr
             ctx.fillRect(0, 0, SIZE, SIZE)
 
-            // Accent bottom-left
-            const gl = ctx.createRadialGradient(0, SIZE, 0, 0, SIZE, 500)
-            gl.addColorStop(0, 'rgba(99,102,241,0.12)')
+            const gl = ctx.createRadialGradient(0, SIZE, 0, 0, SIZE, 600)
+            gl.addColorStop(0, isDark ? 'rgba(99,102,241,0.1)' : 'rgba(79,70,229,0.05)')
             gl.addColorStop(1, 'transparent')
             ctx.fillStyle = gl
             ctx.fillRect(0, 0, SIZE, SIZE)
@@ -229,132 +244,161 @@ export default function Stats() {
             const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM d')
             const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM d')
 
-            // Header — App name
-            ctx.font = 'bold 52px system-ui, sans-serif'
-            ctx.fillStyle = '#ffffff'
+            // --- Header ---
+            ctx.font = 'bold 56px system-ui, -apple-system, sans-serif'
+            ctx.fillStyle = colors.textPrimary
             ctx.fillText('Health Companion', 80, 110)
 
             ctx.font = 'bold 22px system-ui, sans-serif'
-            ctx.fillStyle = '#475569'
-            ctx.fillText('WEEKLY PERFORMANCE SUMMARY', 80, 150)
+            ctx.fillStyle = colors.textMuted
+            ctx.fillText('WEEKLY PERFORMANCE INSIGHTS', 80, 155)
 
-            // Week range + user name (right aligned)
             ctx.textAlign = 'right'
-            ctx.font = 'bold 22px system-ui, sans-serif'
-            ctx.fillStyle = '#64748b'
+            ctx.font = 'bold 24px system-ui, sans-serif'
+            ctx.fillStyle = colors.textSecondary
             ctx.fillText(`${weekStart} — ${weekEnd}`, SIZE - 80, 110)
-            ctx.font = 'bold 36px system-ui, sans-serif'
-            ctx.fillStyle = '#f97316'
-            ctx.fillText(user.name || 'User', SIZE - 80, 155)
+            ctx.font = 'bold 42px system-ui, sans-serif'
+            ctx.fillStyle = colors.accent1
+            ctx.fillText(user.name || 'User', SIZE - 80, 160)
             ctx.textAlign = 'left'
-
-            // Divider
-            ctx.strokeStyle = '#1e293b'
-            ctx.lineWidth = 2
-            ctx.beginPath()
-            ctx.moveTo(80, 185)
-            ctx.lineTo(SIZE - 80, 185)
-            ctx.stroke()
 
             // --- Stat Cards ---
             const drawCard = (x: number, y: number, w: number, h: number, radius = 40) => {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'
-                ctx.strokeStyle = '#1e293b'
-                ctx.lineWidth = 2
+                ctx.save()
+                ctx.shadowColor = isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.05)'
+                ctx.shadowBlur = 30
+                ctx.shadowOffsetY = 10
+                ctx.fillStyle = colors.card
+                ctx.strokeStyle = colors.border
+                ctx.lineWidth = 1.5
                 ctx.beginPath()
                 ctx.roundRect(x, y, w, h, radius)
                 ctx.fill()
                 ctx.stroke()
+                ctx.restore()
             }
 
-            // Avg Calories card
-            drawCard(80, 220, 440, 280)
+            // Stats row
+            drawCard(80, 220, 440, 240)
             ctx.font = 'bold 20px system-ui, sans-serif'
-            ctx.fillStyle = '#f97316'
+            ctx.fillStyle = colors.accent1
             ctx.fillText('🔥 AVG CALORIES', 130, 280)
-            ctx.font = 'bold 110px system-ui, sans-serif'
-            ctx.fillStyle = '#ffffff'
-            ctx.fillText(`${weeklyAverage}`, 130, 410)
-            ctx.font = 'bold 28px system-ui, sans-serif'
-            ctx.fillStyle = '#64748b'
-            ctx.fillText('kcal / day', 130, 450)
+            ctx.font = 'bold 90px system-ui, sans-serif'
+            ctx.fillStyle = colors.textPrimary
+            ctx.fillText(`${weeklyAverage}`, 130, 380)
+            ctx.font = 'bold 24px system-ui, sans-serif'
+            ctx.fillStyle = colors.textSecondary
+            ctx.fillText('kcal / day', 130, 420)
 
-            // Net Calories card
-            drawCard(560, 220, 440, 280)
+            drawCard(560, 220, 440, 240)
             ctx.font = 'bold 20px system-ui, sans-serif'
-            ctx.fillStyle = '#6366f1'
-            ctx.fillText('⚡ WEEKLY NET', 610, 280)
+            ctx.fillStyle = colors.accent2
+            ctx.fillText('⚡ TOTAL NET', 610, 280)
             const totalNet = data.filter(d => new Date(d.fullDate) <= today).reduce((a, d) => a + d.net, 0)
-            ctx.font = 'bold 110px system-ui, sans-serif'
-            ctx.fillStyle = totalNet < 0 ? '#10b981' : '#f97316'
-            ctx.fillText(`${totalNet > 0 ? '+' : ''}${totalNet}`, 610, 410)
-            ctx.font = 'bold 28px system-ui, sans-serif'
-            ctx.fillStyle = '#64748b'
-            ctx.fillText('kcal net', 610, 450)
+            ctx.font = 'bold 90px system-ui, sans-serif'
+            ctx.fillStyle = totalNet < 0 ? colors.accent3 : colors.accent1
+            ctx.fillText(`${totalNet > 0 ? '+' : ''}${totalNet}`, 610, 380)
+            ctx.font = 'bold 24px system-ui, sans-serif'
+            ctx.fillStyle = colors.textSecondary
+            ctx.fillText('kcal trend', 610, 420)
 
-            // Weekly bar chart (days)
-            drawCard(80, 530, 920, 240)
-            ctx.font = 'bold 20px system-ui, sans-serif'
-            ctx.fillStyle = '#94a3b8'
-            ctx.fillText('📅 DAILY INTAKE THIS WEEK', 130, 578)
+            // --- Graph 1: Daily Intake Bar Chart ---
+            drawCard(80, 490, 920, 230)
+            ctx.font = 'bold 18px system-ui, sans-serif'
+            ctx.fillStyle = colors.textMuted
+            ctx.fillText('📅 DAILY INTAKE TREND', 130, 535)
 
-            const barW = 90
-            const barMaxH = 120
-            const barBaseY = 730
-            const barStartX = 130
+            const barW = 85
+            const barMaxH = 100
+            const barBaseY = 675
+            const barStartX = 155
             const maxCal = Math.max(...data.map(d => d.calories), targetCalories, 1)
 
             data.forEach((d, i) => {
                 const h = Math.max(4, (d.calories / maxCal) * barMaxH)
-                const x = barStartX + i * (barW + 16)
-                const isToday = d.isToday
+                const x = barStartX + i * (barW + 22)
 
-                // Bar
-                ctx.fillStyle = isToday ? '#f97316' : '#1e40af'
+                ctx.fillStyle = d.isToday ? colors.accent1 : colors.accent2
+                ctx.globalAlpha = d.isToday ? 1 : 0.6
                 ctx.beginPath()
-                ctx.roundRect(x, barBaseY - h, barW, h, 8)
+                ctx.roundRect(x, barBaseY - h, barW, h, 12)
                 ctx.fill()
+                ctx.globalAlpha = 1
 
-                // Day label
                 ctx.font = 'bold 18px system-ui, sans-serif'
-                ctx.fillStyle = isToday ? '#f97316' : '#64748b'
+                ctx.fillStyle = d.isToday ? colors.accent1 : colors.textSecondary
                 ctx.textAlign = 'center'
-                ctx.fillText(d.day, x + barW / 2, barBaseY + 24)
+                ctx.fillText(d.day, x + barW / 2, barBaseY + 30)
                 ctx.textAlign = 'left'
             })
 
-            // Top meals section
-            drawCard(80, 800, 920, 200)
-            ctx.font = 'bold 20px system-ui, sans-serif'
-            ctx.fillStyle = '#10b981'
-            ctx.fillText('🥗 TOP MEALS THIS WEEK', 130, 848)
+            // --- Graph 2: Net Balance Line Chart (NEW) ---
+            drawCard(80, 745, 920, 180)
+            ctx.font = 'bold 18px system-ui, sans-serif'
+            ctx.fillStyle = colors.textMuted
+            ctx.fillText('📈 PERFORMANCE TREK (NET CALORIES)', 130, 790)
 
-            const shownMeals = topMeals.slice(0, 3)
-            shownMeals.forEach((meal, i) => {
-                ctx.font = `bold 26px system-ui, sans-serif`
-                ctx.fillStyle = '#ffffff'
-                ctx.fillText(`${i + 1}. ${meal}`, 130, 888 + i * 40)
-            })
-            if (shownMeals.length === 0) {
-                ctx.font = 'italic 22px system-ui, sans-serif'
-                ctx.fillStyle = '#475569'
-                ctx.fillText('No meals logged this week yet.', 130, 888)
-            }
+            const lineStartX = 155
+            const lineEndX = SIZE - 155
+            const lineBaseY = 880
+            const lineMaxH = 50
+            const maxNet = Math.max(...data.map(d => Math.abs(d.net)), 1000)
 
-            // Footer
-            ctx.strokeStyle = '#1e293b'
-            ctx.lineWidth = 1.5
+            // Draw baseline
+            ctx.strokeStyle = colors.grid
+            ctx.lineWidth = 1
             ctx.beginPath()
-            ctx.moveTo(80, 1030)
-            ctx.lineTo(SIZE - 80, 1030)
+            ctx.moveTo(lineStartX, lineBaseY)
+            ctx.lineTo(lineEndX, lineBaseY)
             ctx.stroke()
 
-            ctx.font = 'bold 20px system-ui, sans-serif'
-            ctx.fillStyle = '#334155'
-            ctx.fillText('Goal: ' + (user.goal || 'Stay Healthy'), 80, 1060)
+            // Draw Net Trend Line
+            ctx.beginPath()
+            ctx.strokeStyle = colors.accent3
+            ctx.lineWidth = 4
+            ctx.lineJoin = 'round'
+            data.forEach((d, i) => {
+                const x = barStartX + i * (barW + 22) + barW / 2
+                const y = lineBaseY - (d.net / maxNet) * lineMaxH
+                if (i === 0) ctx.moveTo(x, y)
+                else ctx.lineTo(x, y)
+
+                // Point
+                ctx.save()
+                ctx.fillStyle = colors.accent3
+                ctx.beginPath()
+                ctx.arc(x, y, 5, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.restore()
+            })
+            ctx.stroke()
+
+            // --- Motivational Quotes Section (NEW) ---
+            const quotes = [
+                "Your only limit is you. Keep pushing!",
+                "Great things never come from comfort zones.",
+                "Success is a journey, not a destination.",
+                "Focus on progress, not perfection.",
+                "Health is the greatest wealth.",
+                "Small steps every day lead to big results."
+            ]
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
+
+            ctx.font = 'italic bold 24px system-ui, sans-serif'
+            ctx.fillStyle = colors.accent1
+            ctx.textAlign = 'center'
+            ctx.fillText(`"${randomQuote}"`, SIZE / 2, 985)
+            ctx.textAlign = 'left'
+
+            // --- Footer ---
+            ctx.font = 'bold 18px system-ui, sans-serif'
+            ctx.fillStyle = colors.textMuted
+            ctx.fillText(`Goal: ${user.goal || 'Stay Healthy'}`, 80, 1045)
+
             ctx.textAlign = 'right'
-            ctx.fillStyle = '#1e293b'
-            ctx.fillText('Made with Health Companion', SIZE - 80, 1060)
+            ctx.fillStyle = colors.textMuted
+            ctx.font = 'bold 18px system-ui, sans-serif'
+            ctx.fillText('PROUDLY TRACKED ON HEALTH COMPANION', SIZE - 80, 1045)
             ctx.textAlign = 'left'
 
             canvas.toBlob((blob) => {
@@ -486,7 +530,7 @@ export default function Stats() {
                             "flex-1 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all",
                             period === p
                                 ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30"
-                                : "bg-slate-900/40 text-slate-500 border border-white/5 hover:text-slate-300"
+                                : "bg-white dark:bg-slate-900/40 text-slate-600 dark:text-slate-500 border border-slate-200 dark:border-white/5 hover:text-orange-500"
                         )}
                     >
                         {p === 'thisWeek' ? 'This Week' : p === 'lastWeek' ? 'Last Week' : '30 Days'}
@@ -498,22 +542,22 @@ export default function Stats() {
             <div className="glass dark:glass-dark rounded-[2rem] p-5 border-slate-200 dark:border-slate-800/40">
                 <div className="flex items-center gap-2 mb-4">
                     <div className="w-1.5 h-4 bg-orange-500 rounded-full" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Today at a Glance</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400">Today at a Glance</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     {/* Calories today */}
-                    <div className="bg-slate-900/40 rounded-2xl p-3 border border-white/5 relative overflow-hidden group">
+                    <div className="bg-white dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-200 dark:border-white/5 relative overflow-hidden group shadow-sm">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Flame size={12} className="text-orange-500" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Calories</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-500">Calories</span>
                         </div>
                         {todayCalories > 0 ? (
                             <div className="text-lg font-black text-slate-900 dark:text-white tabular-nums">{todayCalories}</div>
                         ) : (
-                            <div className="text-[10px] font-bold text-slate-500 leading-tight">Start hydration tracking today.</div>
+                            <div className="text-[10px] font-bold text-slate-600 dark:text-slate-500 leading-tight">Start logging your meals today.</div>
                         )}
                         <div className="flex justify-between items-end mt-1">
-                            <div className="text-[9px] text-slate-500 font-bold">of {targetCalories} kcal</div>
+                            <div className="text-[9px] text-slate-600 dark:text-slate-500 font-bold">of {targetCalories} kcal</div>
                             {todayCalories > 0 && <span className="text-[8px] font-black bg-orange-500/20 text-orange-400 px-1 rounded">{Math.round(todayCalPct)}%</span>}
                         </div>
                         <div className="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -521,46 +565,46 @@ export default function Stats() {
                         </div>
                     </div>
                     {/* Exercise today */}
-                    <div className="bg-slate-900/40 rounded-2xl p-3 border border-white/5">
+                    <div className="bg-white dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-200 dark:border-white/5 shadow-sm">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Activity size={12} className="text-emerald-500" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Exercise</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-500">Exercise</span>
                         </div>
                         {todayBurned > 0 ? (
                             <>
-                                <div className="text-lg font-black text-emerald-400 tabular-nums">{todayBurned}</div>
-                                <div className="text-[9px] text-slate-500 font-bold">kcal burned</div>
+                                <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{todayBurned}</div>
+                                <div className="text-[9px] text-slate-600 dark:text-slate-500 font-bold">kcal burned</div>
                             </>
                         ) : (
                             <>
-                                <div className="text-lg font-black text-slate-500">—</div>
-                                <div className="text-[9px] text-slate-600 font-bold">Rest day</div>
+                                <div className="text-lg font-black text-slate-400 dark:text-slate-500">—</div>
+                                <div className="text-[10px] text-slate-600 dark:text-slate-500 font-bold">Rest day</div>
                             </>
                         )}
                     </div>
                     {/* Water today */}
-                    <div className="bg-slate-900/40 rounded-2xl p-3 border border-white/5">
+                    <div className="bg-white dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-200 dark:border-white/5 shadow-sm">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Droplets size={12} className="text-blue-500" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Water</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-500">Water</span>
                         </div>
                         <div className="text-lg font-black text-slate-900 dark:text-white tabular-nums">{todayWater}</div>
                         <div className="flex justify-between items-end mt-1">
-                            <div className="text-[9px] text-slate-500 font-bold">of {user.waterGoal} ml</div>
-                            {todayWater > 0 && <span className="text-[8px] font-black bg-blue-500/20 text-blue-400 px-1 rounded">{Math.round(todayWaterPct)}%</span>}
+                            <div className="text-[9px] text-slate-600 dark:text-slate-500 font-bold">of {user.waterGoal} ml</div>
+                            {todayWater > 0 && <span className="text-[8px] font-black bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1 rounded">{Math.round(todayWaterPct)}%</span>}
                         </div>
-                        <div className="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div className="mt-2 h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div className="h-full bg-blue-500 rounded-full transition-all duration-700" style={{ width: `${todayWaterPct}%` }} />
                         </div>
                     </div>
                     {/* Streak */}
-                    <div className="bg-slate-900/40 rounded-2xl p-3 border border-white/5">
+                    <div className="bg-white dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-200 dark:border-white/5 shadow-sm">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Flame size={12} className="text-amber-500" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Streak</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-500">Streak</span>
                         </div>
-                        <div className="text-lg font-black text-amber-400 tabular-nums">{streaks.current} <span className="text-xs text-slate-500">days</span></div>
-                        <div className="text-[9px] text-slate-500 font-bold">Best: {streaks.longest}d</div>
+                        <div className="text-lg font-black text-amber-600 dark:text-amber-400 tabular-nums">{streaks.current} <span className="text-xs text-slate-500">days</span></div>
+                        <div className="text-[9px] text-slate-600 dark:text-slate-500 font-bold">Best: {streaks.longest}d</div>
                     </div>
                 </div>
 
