@@ -7,10 +7,6 @@
         @apply bg-slate-200 dark:bg-slate-900 text-slate-900 font-sans antialiased transition-colors duration-300;
     }
 
-    /* .dark body {
-        @apply bg-slate-100 dark:bg-slate-950 text-slate-100;
-    } */
-
     .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
@@ -62,21 +58,94 @@
     @apply bg-slate-900 border-slate-800 text-slate-100;
 }
 
-/* Animations */
-@keyframes gradient-xy {
-
-    0%,
-    100% {
-        background-size: 400% 400%;
-        background-position: left center;
+/* Core Animations */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
     }
 
-    50% {
-        background-size: 200% 200%;
-        background-position: right center;
+    100% {
+        transform: translateX(100%) rotate(45deg);
     }
 }
 
+@keyframes cinematic-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(1.05);
+        filter: blur(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes slow-breath {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.5;
+    }
+}
+
+@keyframes subtle-slide-up {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes loading-bar {
+    0% {
+        left: -100%;
+    }
+
+    50% {
+        left: 0;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* Animation Classes */
+.animate-shimmer {
+    animation: shimmer 2.5s infinite;
+}
+
+.animate-cinematic-fade-in {
+    animation: cinematic-fade-in 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slow-breath {
+    animation: slow-breath 8s ease-in-out infinite;
+}
+
+.animate-subtle-slide-up {
+    animation: subtle-slide-up 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-loading-bar {
+    position: relative;
+    animation: loading-bar 2s ease-in-out infinite;
+}
+
+/* Legacy Support (If needed elsewhere) */
 @keyframes blob {
     0% {
         transform: translate(0px, 0px) scale(1);
@@ -95,52 +164,6 @@
     }
 }
 
-@keyframes bounce-slight {
-
-    0%,
-    100% {
-        transform: translateY(-5%);
-        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-
-    50% {
-        transform: translateY(0);
-        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
-}
-
-@keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-gradient-xy {
-    animation: gradient-xy 15s ease infinite;
-}
-
 .animate-blob {
     animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-    animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-    animation-delay: 4s;
-}
-
-.animate-bounce-slight {
-    animation: bounce-slight 3s infinite;
-}
-
-.animate-fade-in-up {
-    animation: fade-in-up 1s ease-out forwards;
 }
