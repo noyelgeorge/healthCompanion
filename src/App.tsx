@@ -17,10 +17,7 @@ import { FoodScanner } from './components/FoodScanner';
 import { Toaster } from 'sonner';
 
 function App() {
-  const [showSplash, setShowSplash] = useState(() => {
-    // Skip splash on mobile for instant startup
-    return typeof window !== 'undefined' && window.innerWidth > 768;
-  });
+  const [showSplash, setShowSplash] = useState(true);
 
   const theme = useAppStore(state => state.theme);
 

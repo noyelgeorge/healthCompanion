@@ -21,8 +21,8 @@ export default defineConfig({
         description: 'Your complete daily health companion',
         start_url: '.',
         scope: '/',
-        theme_color: '#f97316',
-        background_color: '#ffffff',
+        theme_color: '#06b6d4',
+        background_color: '#000000',
         display: 'standalone',
         icons: [
           {
