@@ -17,7 +17,7 @@ export function BottomNav() {
 
     const secondaryItems = [
         { icon: Calendar, label: "Plans", path: "/plans" },
-        { icon: Dumbbell, label: "Workout", path: "/workout" },
+        { icon: Dumbbell, label: "Exercise", path: "/workout" },
         { icon: Pill, label: "Medicine", path: "/medicine" },
         { icon: Users, label: "Community", path: "/social" },
     ]

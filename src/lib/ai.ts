@@ -311,3 +311,64 @@ export async function testGeminiKey(apiKey: string): Promise<boolean> {
         throw error;
     }
 }
+
+export interface ExerciseSuggestion {
+    name: string
+    type: 'walk' | 'run' | 'bike' | 'strength' | 'yoga' | 'other'
+    duration: number        // minutes
+    intensity: 'low' | 'moderate' | 'high'
+    caloriesBurned: number
+    description: string     // one sentence why this suits them
+    bestTime: string        // e.g. "Morning" or "Evening"
+}
+
+export async function getExerciseSuggestions(
+    user: UserProfile
+): Promise<ExerciseSuggestion[]> {
+    const apiKey = getApiKey()
+    if (!apiKey) throw new Error('No API key configured.')
+
+    const prompt = `You are a certified personal trainer.
+The user's profile:
+- Goal: ${user.goal} (lose/gain/maintain)
+- Activity level: ${user.activityLevel}
+- Weight: ${user.weight}kg
+- Age: ${user.age}
+- Gender: ${user.gender}
+
+Generate exactly 4 exercise suggestions tailored to this profile.
+For a sedentary/light user suggest gentle activities.
+For active/athlete suggest higher intensity.
+Match goal: lose = cardio-focused, gain = strength-focused, maintain = balanced.
+
+Return ONLY a JSON array, no markdown:
+[
+  {
+    "name": "string",
+    "type": "walk|run|bike|strength|yoga|other",
+    "duration": number,
+    "intensity": "low|moderate|high",
+    "caloriesBurned": number,
+    "description": "string",
+    "bestTime": "string"
+  }
+]`
+
+    const response = await fetchWithRetry(`${GEMINI_API_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    })
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err?.error?.message || `API error ${response.status}`)
+    }
+
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const clean = sanitizeJSON(text)
+    return JSON.parse(clean) as ExerciseSuggestion[]
+}

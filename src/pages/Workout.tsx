@@ -1,230 +1,314 @@
-import { useState } from "react"
-import { useAppStore } from "../store/useAppStore"
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns"
-import { Plus, Trash2, Trophy, Flame, Timer, BarChart as BarChartIcon, ChevronRight, Dumbbell, Bike, Footprints, Activity } from "lucide-react"
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
-import { cn } from "../lib/utils"
-import { ExerciseModal } from "../components/workout/ExerciseModal"
-import { calculateExerciseCalories } from "../lib/calories"
-import { toast } from "sonner"
+import { useState, useEffect } from 'react'
+import { useAppStore } from '../store/useAppStore'
+import { getExerciseSuggestions, type ExerciseSuggestion } from '../lib/ai'
+import { Dumbbell, Footprints, Bike, Activity, RefreshCw,
+         Loader2, Clock, Flame, Zap, Moon, Sun } from 'lucide-react'
+import { cn } from '../lib/utils'
+import { toast } from 'sonner'
+
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+    walk:     <Footprints size={22} />,
+    run:      <Activity size={22} />,
+    bike:     <Bike size={22} />,
+    strength: <Dumbbell size={22} />,
+    yoga:     <Activity size={22} className="rotate-45" />,
+    other:    <Activity size={22} />,
+}
+
+const TYPE_COLORS: Record<string, string> = {
+    walk:     'bg-emerald-500',
+    run:      'bg-orange-500',
+    bike:     'bg-cyan-500',
+    strength: 'bg-indigo-500',
+    yoga:     'bg-purple-500',
+    other:    'bg-slate-500',
+}
+
+const INTENSITY_BADGE: Record<string, string> = {
+    low:      'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    moderate: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    high:     'bg-rose-500/10 text-rose-500 border-rose-500/20',
+}
 
 export default function Workout() {
-    const [showModal, setShowModal] = useState(false)
-    const today = new Date()
-    const dateStr = format(today, 'yyyy-MM-dd')
-
-    const exerciseLogs = useAppStore(state => state.exerciseLogs || {})
     const user = useAppStore(state => state.user)
-    const addExerciseEntry = useAppStore(state => state.addExerciseEntry)
-    const removeExerciseEntry = useAppStore(state => state.removeExerciseEntry)
+    const [suggestions, setSuggestions] = useState<ExerciseSuggestion[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [lastFetched, setLastFetched] = useState<number>(0)
+    const [error, setError] = useState<string | null>(null)
 
-    const todayLog = exerciseLogs[dateStr]
-    const todayEntries = todayLog?.entries || []
+    const fetchSuggestions = async (force = false) => {
+        // Cache for 4 hours — suggestions don't need to refresh constantly
+        const FOUR_HOURS = 4 * 60 * 60 * 1000
+        if (!force && suggestions.length > 0 && 
+            Date.now() - lastFetched < FOUR_HOURS) return
 
-    const totalMinutesToday = todayEntries.reduce((acc, e) => acc + e.durationMinutes, 0)
-    const totalBurnedToday = todayLog?.entries.reduce((acc, e) => acc + (e.calories || 0), 0) || 0
-
-    // Weekly Chart Data
-    const start = startOfWeek(today, { weekStartsOn: 1 })
-    const end = endOfWeek(today, { weekStartsOn: 1 })
-    const days = eachDayOfInterval({ start, end })
-
-    const chartData = days.map(day => {
-        const dStr = format(day, 'yyyy-MM-dd')
-        const log = exerciseLogs[dStr]
-        const mins = (log?.entries || []).reduce((acc, e) => acc + e.durationMinutes, 0)
-        return {
-            name: format(day, 'EEE'),
-            minutes: mins,
-            isToday: isSameDay(day, today)
-        }
-    })
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'walk': return <Footprints size={18} />
-            case 'run': return <Activity size={18} />
-            case 'bike': return <Bike size={18} />
-            case 'strength': return <Dumbbell size={18} />
-            case 'yoga': return <Activity size={18} className="rotate-45" />
-            default: return <Activity size={18} />
+        setIsLoading(true)
+        setError(null)
+        try {
+            const results = await getExerciseSuggestions(user)
+            setSuggestions(results)
+            setLastFetched(Date.now())
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Failed to load suggestions'
+            setError(msg)
+            toast.error(msg)
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    return (
-        <div className="page-container space-y-8">
-            {/* Background Blobs */}
-            <div className="absolute -top-20 -right-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl -z-10 animate-blob"></div>
-            <div className="absolute top-1/2 -left-20 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl -z-10 animate-blob animation-delay-4000"></div>
+    useEffect(() => {
+        fetchSuggestions()
+    }, [])
 
-            <header className="flex justify-between items-center relative z-10 px-1">
+    const activityLabel: Record<string, string> = {
+        sedentary: 'Sedentary',
+        light:     'Lightly Active',
+        moderate:  'Moderately Active',
+        active:    'Very Active',
+        athlete:   'Athlete',
+    }
+
+    const goalLabel: Record<string, string> = {
+        lose:     'Weight Loss',
+        gain:     'Muscle Gain',
+        maintain: 'Maintenance',
+    }
+
+    return (
+        <div className="page-container space-y-6 pb-24">
+            {/* Background blobs */}
+            <div className="absolute -top-20 -right-20 w-80 h-80 
+                            bg-emerald-500/10 rounded-full blur-3xl 
+                            -z-10 animate-blob" />
+            <div className="absolute top-1/2 -left-20 w-80 h-80 
+                            bg-indigo-500/5 rounded-full blur-3xl 
+                            -z-10 animate-blob animation-delay-4000" />
+
+            {/* Header */}
+            <header className="flex justify-between items-start px-1 pt-6">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Workout Hub</h1>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Performance & Recovery</p>
+                    <h1 className="text-2xl font-black text-slate-800 
+                                   dark:text-white uppercase tracking-tight">
+                        Exercise Guide
+                    </h1>
+                    <p className="text-[10px] font-black text-slate-400 
+                                  uppercase tracking-widest">
+                        AI suggestions for your profile
+                    </p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
-                    className="h-12 px-6 bg-black dark:bg-black text-white rounded-2xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/20 border-white/20"
+                    onClick={() => fetchSuggestions(true)}
+                    disabled={isLoading}
+                    className="h-10 px-4 glass rounded-2xl flex items-center 
+                               gap-2 text-[10px] font-black uppercase 
+                               tracking-widest text-slate-500 
+                               dark:text-slate-400 hover:text-orange-500 
+                               transition-all disabled:opacity-50"
                 >
-                    <Plus size={20} />
-                    <span className="text-xs font-black uppercase tracking-widest text-white">Add Activity</span>
+                    <RefreshCw size={14} 
+                               className={cn(isLoading && 'animate-spin')} />
+                    Refresh
                 </button>
             </header>
 
-            {/* Daily Summary */}
-            <div className="grid grid-cols-2 gap-4 relative z-10">
-                <div className="glass-dark p-6 rounded-[2.5rem] relative overflow-hidden border-white/10">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Flame size={48} className="text-orange-500" />
-                    </div>
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Calories Burned</div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-white">{totalBurnedToday}</span>
-                        <span className="text-xs font-bold text-slate-500">kcal</span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
-                        <Trophy size={10} />
-                        <span>Daily Target Active</span>
-                    </div>
+            {/* Profile context pill */}
+            <div className="flex items-center gap-2 flex-wrap px-1">
+                <div className="px-3 py-1.5 glass rounded-xl flex 
+                                items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                    <span className="text-[10px] font-black uppercase 
+                                     tracking-widest text-slate-600 
+                                     dark:text-slate-400">
+                        {goalLabel[user.goal] || 'General Fitness'}
+                    </span>
                 </div>
-
-                <div className="glass p-6 rounded-[2.5rem] bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-xl">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Time Active</div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-slate-800 dark:text-white">{totalMinutesToday}</span>
-                        <span className="text-xs font-bold text-slate-400">min</span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-indigo-500">
-                        <Timer size={10} />
-                        <span>Heart Rate Zone 2-3</span>
-                    </div>
+                <div className="px-3 py-1.5 glass rounded-xl flex 
+                                items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <span className="text-[10px] font-black uppercase 
+                                     tracking-widest text-slate-600 
+                                     dark:text-slate-400">
+                        {activityLabel[user.activityLevel] || 'Moderate'}
+                    </span>
                 </div>
-            </div>
-
-            {/* Chart Section */}
-            <div className="glass dark:glass-dark rounded-[2.5rem] p-6 border-white/20 dark:border-slate-800/50 shadow-xl relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-indigo-500/20 rounded-lg text-indigo-500">
-                            <BarChartIcon size={14} />
-                        </div>
-                        <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-100">Weekly Activity</h3>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400">Minutes / Day</span>
-                </div>
-
-                <div className="h-40 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <XAxis
-                                dataKey="name"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }}
-                                dy={10}
-                            />
-                            <Tooltip
-                                cursor={{ fill: 'transparent' }}
-                                content={({ active, payload }) => {
-                                    if (active && payload && payload.length) {
-                                        return (
-                                            <div className="glass-dark px-3 py-2 rounded-xl border-white/10 shadow-2xl">
-                                                <p className="text-[10px] font-black text-white">{payload[0].value} MIN</p>
-                                            </div>
-                                        )
-                                    }
-                                    return null
-                                }}
-                            />
-                            <Bar dataKey="minutes" radius={[6, 6, 6, 6]} barSize={20}>
-                                {chartData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={entry.isToday ? '#10b981' : '#6366f1'}
-                                        fillOpacity={entry.isToday ? 1 : 0.3}
-                                    />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                <div className="px-3 py-1.5 glass rounded-xl flex 
+                                items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-black uppercase 
+                                     tracking-widest text-slate-600 
+                                     dark:text-slate-400">
+                        {user.weight}kg
+                    </span>
                 </div>
             </div>
 
-            {/* Activities List */}
-            <div className="space-y-4 relative z-10">
-                <div className="flex items-center justify-between px-1">
-                    <div className="bg-black text-white px-4 py-1.5 rounded-xl">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest">Activity</h3>
-                    </div>
-                    <ChevronRight size={14} className="text-slate-300" />
+            {/* Content */}
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center 
+                                py-24 gap-4">
+                    <Loader2 size={36} 
+                             className="animate-spin text-orange-500" />
+                    <p className="text-[10px] font-black uppercase 
+                                  tracking-widest text-slate-400 
+                                  animate-pulse">
+                        Building your plan...
+                    </p>
                 </div>
-
-                <div className="space-y-3">
-                    {todayEntries.length === 0 ? (
-                        <div className="glass dark:glass-dark p-8 rounded-[2.5rem] text-center border-dashed border-slate-200 dark:border-slate-800">
-                            <Dumbbell className="mx-auto text-slate-200 dark:text-slate-800 mb-3" size={32} />
-                            <p className="text-sm font-bold text-slate-400 italic">No activity logged today yet.</p>
-                        </div>
-                    ) : (
-                        todayEntries.map(entry => (
-                            <div key={entry.id} className="group glass dark:glass-dark p-4 rounded-3xl border-white/20 dark:border-slate-800/50 flex items-center justify-between hover:scale-[1.02] transition-all">
+            ) : error ? (
+                <div className="glass p-8 rounded-[2.5rem] text-center 
+                                space-y-4">
+                    <p className="text-sm font-bold text-slate-400">{error}</p>
+                    <p className="text-[10px] text-slate-500 font-bold 
+                                  uppercase tracking-widest">
+                        Add your Gemini API key in Profile → AI Settings
+                    </p>
+                    <button
+                        onClick={() => fetchSuggestions(true)}
+                        className="px-6 py-3 bg-orange-500 text-white 
+                                   rounded-2xl text-[10px] font-black 
+                                   uppercase tracking-widest"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            ) : suggestions.length === 0 ? (
+                <div className="glass p-12 rounded-[2.5rem] text-center 
+                                space-y-3 border-dashed border-2 
+                                border-slate-100 dark:border-slate-800">
+                    <Dumbbell size={36} 
+                              className="mx-auto text-slate-300 
+                                         dark:text-slate-700" />
+                    <p className="text-sm font-bold text-slate-400">
+                        No suggestions yet
+                    </p>
+                    <p className="text-[10px] font-black uppercase 
+                                  tracking-widest text-slate-500">
+                        Complete your profile to get started
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {suggestions.map((s, i) => (
+                        <div
+                            key={i}
+                            className="glass rounded-[2rem] p-5 
+                                       hover:scale-[1.01] 
+                                       active:scale-[0.99] 
+                                       transition-all duration-200 
+                                       space-y-4"
+                        >
+                            {/* Top row */}
+                            <div className="flex items-start 
+                                            justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-emerald-500">
-                                        {getIcon(entry.type)}
+                                    <div className={cn(
+                                        'w-12 h-12 rounded-2xl flex items-center',
+                                        'justify-center text-white shadow-lg',
+                                        TYPE_COLORS[s.type] || 'bg-slate-500'
+                                    )}>
+                                        {TYPE_ICONS[s.type]}
                                     </div>
                                     <div>
-                                        <div className="font-black text-slate-800 dark:text-white tracking-tight">{entry.name}</div>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{entry.durationMinutes} min</span>
-                                            <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                                            <span className={cn(
-                                                "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
-                                                entry.intensity === 'high' ? "bg-rose-500/10 text-rose-500" :
-                                                    entry.intensity === 'moderate' ? "bg-amber-500/10 text-amber-500" :
-                                                        "bg-emerald-500/10 text-emerald-500"
-                                            )}>
-                                                {entry.intensity}
-                                            </span>
+                                        <h3 className="font-black 
+                                                        text-slate-800 
+                                                        dark:text-white 
+                                                        text-base 
+                                                        leading-tight">
+                                            {s.name}
+                                        </h3>
+                                        <div className={cn(
+                                            'mt-1 px-2 py-0.5 rounded-full',
+                                            'text-[9px] font-black uppercase',
+                                            'tracking-widest border inline-flex',
+                                            INTENSITY_BADGE[s.intensity]
+                                        )}>
+                                            {s.intensity} intensity
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <div className="text-sm font-black text-slate-800 dark:text-white">{entry.calories || 0}</div>
-                                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Kcal</div>
+                                <div className="text-right shrink-0">
+                                    <div className="text-xl font-black 
+                                                    text-slate-800 
+                                                    dark:text-white">
+                                        ~{s.caloriesBurned}
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            removeExerciseEntry(dateStr, entry.id)
-                                            toast.success("Activity cleared")
-                                        }}
-                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="text-[9px] font-black 
+                                                    text-slate-400 uppercase 
+                                                    tracking-widest">
+                                        kcal
+                                    </div>
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
-            </div>
 
-            {showModal && (
-                <ExerciseModal
-                    onClose={() => setShowModal(false)}
-                    onSubmit={async (name, type, minutes, intensity) => {
-                        const calories = calculateExerciseCalories(type, minutes, user.weight)
-                        await addExerciseEntry(dateStr, {
-                            name,
-                            type,
-                            durationMinutes: minutes,
-                            intensity,
-                            calories
-                        })
-                        setShowModal(false)
-                        toast.success("Great job! Session recorded ⚡")
-                    }}
-                />
+                            {/* Stats row */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 
+                                                px-3 py-1.5 
+                                                bg-slate-50 
+                                                dark:bg-slate-800/50 
+                                                rounded-xl">
+                                    <Clock size={12} 
+                                           className="text-slate-400" />
+                                    <span className="text-[10px] font-black 
+                                                     text-slate-600 
+                                                     dark:text-slate-400">
+                                        {s.duration} min
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 
+                                                px-3 py-1.5 
+                                                bg-slate-50 
+                                                dark:bg-slate-800/50 
+                                                rounded-xl">
+                                    {s.bestTime.toLowerCase()
+                                              .includes('morning') 
+                                        ? <Sun size={12} 
+                                               className="text-amber-500" />
+                                        : <Moon size={12} 
+                                                className="text-indigo-400" />
+                                    }
+                                    <span className="text-[10px] font-black 
+                                                     text-slate-600 
+                                                     dark:text-slate-400">
+                                        {s.bestTime}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 
+                                                px-3 py-1.5 
+                                                bg-slate-50 
+                                                dark:bg-slate-800/50 
+                                                rounded-xl">
+                                    <Flame size={12} 
+                                          className="text-orange-500" />
+                                    <span className="text-[10px] font-black 
+                                                     text-slate-600 
+                                                     dark:text-slate-400 
+                                                     capitalize">
+                                        {s.type}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-[11px] text-slate-500 
+                                          dark:text-slate-400 font-medium 
+                                          leading-relaxed px-1 italic">
+                                {s.description}
+                            </p>
+                        </div>
+                    ))}
+
+                    {/* Footer note */}
+                    <div className="flex items-center gap-2 px-2 pt-2">
+                        <Zap size={12} className="text-orange-500 shrink-0" />
+                        <p className="text-[10px] text-slate-400 font-bold 
+                                      uppercase tracking-widest">
+                            Suggestions refresh when your profile changes
+                        </p>
+                    </div>
+                </div>
             )}
         </div>
     )
