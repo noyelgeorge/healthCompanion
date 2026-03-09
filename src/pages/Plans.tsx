@@ -133,7 +133,7 @@ export default function Plans() {
     }
 
     return (
-        <div className="page-container space-y-6">
+        <div className="space-y-6 pb-24">
             {/* Background Blob */}
             <div className="absolute -top-20 -right-20 w-80 h-80 bg-indigo-500/5 dark:bg-indigo-400/5 rounded-full blur-3xl -z-10 animate-blob"></div>
             <div className="absolute top-1/2 -left-20 w-80 h-80 bg-purple-500/5 dark:bg-purple-400/5 rounded-full blur-3xl -z-10 animate-blob animation-delay-2000"></div>

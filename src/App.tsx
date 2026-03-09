@@ -13,6 +13,7 @@ import Splash from './pages/Splash';
 import MedicineMode from './medicine/MedicineMode';
 import Social from './pages/Social';
 import Workout from './pages/Workout';
+import Planner from './pages/Planner';
 import { FoodScanner } from './components/FoodScanner';
 import { Toaster } from 'sonner';
 
@@ -75,6 +76,7 @@ function App() {
           <Route path="/medicine" element={<MedicineMode />} />
           <Route path="/social" element={<Social />} />
           <Route path="/workout" element={<Workout />} />
+          <Route path="/planner" element={<Planner />} />
           <Route path="/scanner" element={<FoodScanner />} />
 
         </Route>

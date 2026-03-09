@@ -1,33 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { getExerciseSuggestions, type ExerciseSuggestion } from '../lib/ai'
-import { Dumbbell, Footprints, Bike, Activity, RefreshCw,
-         Loader2, Clock, Flame, Zap, Moon, Sun } from 'lucide-react'
+import {
+    Dumbbell, Footprints, Bike, Activity, RefreshCw,
+    Loader2, Clock, Flame, Zap, Moon, Sun
+} from 'lucide-react'
 import { cn } from '../lib/utils'
 import { toast } from 'sonner'
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-    walk:     <Footprints size={22} />,
-    run:      <Activity size={22} />,
-    bike:     <Bike size={22} />,
+    walk: <Footprints size={22} />,
+    run: <Activity size={22} />,
+    bike: <Bike size={22} />,
     strength: <Dumbbell size={22} />,
-    yoga:     <Activity size={22} className="rotate-45" />,
-    other:    <Activity size={22} />,
+    yoga: <Activity size={22} className="rotate-45" />,
+    other: <Activity size={22} />,
 }
 
 const TYPE_COLORS: Record<string, string> = {
-    walk:     'bg-emerald-500',
-    run:      'bg-orange-500',
-    bike:     'bg-cyan-500',
+    walk: 'bg-emerald-500',
+    run: 'bg-orange-500',
+    bike: 'bg-cyan-500',
     strength: 'bg-indigo-500',
-    yoga:     'bg-purple-500',
-    other:    'bg-slate-500',
+    yoga: 'bg-purple-500',
+    other: 'bg-slate-500',
 }
 
 const INTENSITY_BADGE: Record<string, string> = {
-    low:      'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    low: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
     moderate: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-    high:     'bg-rose-500/10 text-rose-500 border-rose-500/20',
+    high: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
 }
 
 export default function Workout() {
@@ -40,7 +42,7 @@ export default function Workout() {
     const fetchSuggestions = async (force = false) => {
         // Cache for 4 hours — suggestions don't need to refresh constantly
         const FOUR_HOURS = 4 * 60 * 60 * 1000
-        if (!force && suggestions.length > 0 && 
+        if (!force && suggestions.length > 0 &&
             Date.now() - lastFetched < FOUR_HOURS) return
 
         setIsLoading(true)
@@ -64,20 +66,20 @@ export default function Workout() {
 
     const activityLabel: Record<string, string> = {
         sedentary: 'Sedentary',
-        light:     'Lightly Active',
-        moderate:  'Moderately Active',
-        active:    'Very Active',
-        athlete:   'Athlete',
+        light: 'Lightly Active',
+        moderate: 'Moderately Active',
+        active: 'Very Active',
+        athlete: 'Athlete',
     }
 
     const goalLabel: Record<string, string> = {
-        lose:     'Weight Loss',
-        gain:     'Muscle Gain',
+        lose: 'Weight Loss',
+        gain: 'Muscle Gain',
         maintain: 'Maintenance',
     }
 
     return (
-        <div className="page-container space-y-6 pb-24">
+        <div className="space-y-8 pb-24">
             {/* Background blobs */}
             <div className="absolute -top-20 -right-20 w-80 h-80 
                             bg-emerald-500/10 rounded-full blur-3xl 
@@ -107,8 +109,8 @@ export default function Workout() {
                                dark:text-slate-400 hover:text-orange-500 
                                transition-all disabled:opacity-50"
                 >
-                    <RefreshCw size={14} 
-                               className={cn(isLoading && 'animate-spin')} />
+                    <RefreshCw size={14}
+                        className={cn(isLoading && 'animate-spin')} />
                     Refresh
                 </button>
             </header>
@@ -148,8 +150,8 @@ export default function Workout() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center 
                                 py-24 gap-4">
-                    <Loader2 size={36} 
-                             className="animate-spin text-orange-500" />
+                    <Loader2 size={36}
+                        className="animate-spin text-orange-500" />
                     <p className="text-[10px] font-black uppercase 
                                   tracking-widest text-slate-400 
                                   animate-pulse">
@@ -177,8 +179,8 @@ export default function Workout() {
                 <div className="glass p-12 rounded-[2.5rem] text-center 
                                 space-y-3 border-dashed border-2 
                                 border-slate-100 dark:border-slate-800">
-                    <Dumbbell size={36} 
-                              className="mx-auto text-slate-300 
+                    <Dumbbell size={36}
+                        className="mx-auto text-slate-300 
                                          dark:text-slate-700" />
                     <p className="text-sm font-bold text-slate-400">
                         No suggestions yet
@@ -249,8 +251,8 @@ export default function Workout() {
                                                 bg-slate-50 
                                                 dark:bg-slate-800/50 
                                                 rounded-xl">
-                                    <Clock size={12} 
-                                           className="text-slate-400" />
+                                    <Clock size={12}
+                                        className="text-slate-400" />
                                     <span className="text-[10px] font-black 
                                                      text-slate-600 
                                                      dark:text-slate-400">
@@ -263,11 +265,11 @@ export default function Workout() {
                                                 dark:bg-slate-800/50 
                                                 rounded-xl">
                                     {s.bestTime.toLowerCase()
-                                              .includes('morning') 
-                                        ? <Sun size={12} 
-                                               className="text-amber-500" />
-                                        : <Moon size={12} 
-                                                className="text-indigo-400" />
+                                        .includes('morning')
+                                        ? <Sun size={12}
+                                            className="text-amber-500" />
+                                        : <Moon size={12}
+                                            className="text-indigo-400" />
                                     }
                                     <span className="text-[10px] font-black 
                                                      text-slate-600 
@@ -280,8 +282,8 @@ export default function Workout() {
                                                 bg-slate-50 
                                                 dark:bg-slate-800/50 
                                                 rounded-xl">
-                                    <Flame size={12} 
-                                          className="text-orange-500" />
+                                    <Flame size={12}
+                                        className="text-orange-500" />
                                     <span className="text-[10px] font-black 
                                                      text-slate-600 
                                                      dark:text-slate-400 
