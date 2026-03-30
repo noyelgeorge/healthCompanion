@@ -3,6 +3,7 @@ import { Bell, ShieldCheck, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMedicineStore } from '../store/medicineStore'
 import { format, parse, addMinutes, subMinutes } from 'date-fns'
+import { toast } from 'sonner'
 
 export const NotificationManager = () => {
     const {
@@ -15,6 +16,20 @@ export const NotificationManager = () => {
     } = useMedicineStore()
 
     const [showPermissionUI, setShowPermissionUI] = useState(false)
+    const [localPermission, setLocalPermission] = useState<NotificationPermission>(
+        typeof Notification !== 'undefined' ? Notification.permission : 'default'
+    )
+
+    // Sync permission on window focus (in case user changed it in browser settings)
+    useEffect(() => {
+        const syncPermission = () => {
+            if (typeof Notification !== 'undefined') {
+                setLocalPermission(Notification.permission)
+            }
+        }
+        window.addEventListener('focus', syncPermission)
+        return () => window.removeEventListener('focus', syncPermission)
+    }, [])
 
     // Initial check for permission prompt
     useEffect(() => {
@@ -25,56 +40,101 @@ export const NotificationManager = () => {
 
     const showNotification = (title: string, body: string, medId: string) => {
         console.log('🔔 Requesting notification:', { title, body, medId, permission: Notification.permission });
+        
+        // 1. UI Toast Fallback (Always show in-app feedback)
+        toast.info(title, { 
+            description: body,
+            duration: 8000,
+            icon: '💊'
+        });
+
+        // 2. Browser Native Notification (OS level)
         if ('Notification' in window && Notification.permission === 'granted') {
             const options = {
                 body,
-                icon: '/icons/pwa-192x192.png',
-                badge: '/icons/pwa-192x192.png',
+                icon: '/pwa-192x192.png',
+                badge: '/pwa-192x192.png',
                 tag: `med-${medId}`
             }
-            console.log('🚀 Executing new Notification()...');
+            console.log('🚀 [NotificationManager] Executing new Notification()...');
             new Notification(title, options)
+        } else if (Notification.permission === 'denied') {
+            console.warn('❌ [NotificationManager] Native permission denied.');
+            toast.error("Notifications Blocked", {
+                description: "Please enable notifications in your browser settings (click the lock icon in the address bar)."
+            });
         } else {
-            console.warn('❌ Notification skipped: Permission not granted or API missing.');
+             console.warn('❌ [NotificationManager] Native API missing or default permission.');
         }
     }
 
     // Main Notification Loop
     const firedRef = useRef<Set<string>>(new Set())
 
+    // 1. Independent Listener for manual/automated test notifications
     useEffect(() => {
-        if (!notificationsEnabled || Notification.permission !== 'granted') return
+        const handleTest = () => {
+            console.log('🧪 [NotificationManager] Test event received. Current permission:', Notification.permission);
+            showNotification(
+                "Test Alert 💊",
+                "Your medication notifications are working correctly!",
+                "test-notif"
+            )
+        }
+        window.addEventListener('test-notification', handleTest)
+        console.log('✅ [NotificationManager] Global test-notification listener active.');
+        return () => window.removeEventListener('test-notification', handleTest)
+    }, [])
+
+    // 2. Main Notification Loop
+    useEffect(() => {
+        console.log('🔄 [NotificationManager] Loop effect triggered:', { notificationsEnabled, localPermission });
+        if (!notificationsEnabled || localPermission !== 'granted') {
+            console.warn('⏸️ [NotificationManager] Loop suspended: Disabled or missing permission.');
+            return
+        }
 
         const checkReminders = () => {
             const now = new Date()
             const currentTime = format(now, 'HH:mm')
             const dateStr = format(now, 'yyyy-MM-dd')
 
+            console.log(`💓 [NotificationManager] Heartbeat - Checking ${medicines.length} medicines at ${currentTime}`);
+
             medicines.forEach(med => {
                 const isTaken = takenToday.some(t => t.medId === med.id)
                 const scheduleTime = parse(med.schedule, 'HH:mm', now)
-                const offset = med.reminderOffsetMinutes ?? 0
                 
-                // Target time for the reminder (schedule - offset)
-                const targetTime = subMinutes(scheduleTime, offset)
-
-                // 1. Regular Reminder (fired if now >= targetTime AND we haven't fired today)
-                // We limit it to firing within a 60-minute window to avoid old alerts if the app is opened late
-                const diffScheduled = (now.getTime() - targetTime.getTime()) / 60000
-                if (diffScheduled >= 0 && diffScheduled < 60 && !isTaken) {
-                    const notifKey = `${med.id}-regular-${dateStr}`
+                // 1. Upcoming Reminder (15 mins before)
+                const targetTime = subMinutes(scheduleTime, 15)
+                const diffUpcoming = (now.getTime() - targetTime.getTime()) / 60000
+                if (diffUpcoming >= 0 && diffUpcoming < 2 && !isTaken) {
+                    const notifKey = `${med.id}-upcoming-${dateStr}`
                     if (!firedRef.current.has(notifKey)) {
                         firedRef.current.add(notifKey)
-                        const label = offset > 0 ? `In ${offset} mins: ${med.name}` : `Time for ${med.name}`
                         showNotification(
-                            label,
-                            `Scheduled for ${med.schedule}. ${med.notes || ''}`,
-                            med.id
+                            `Upcoming: ${med.name}`,
+                            `Scheduled for ${med.schedule}. Please prepare to take it.`,
+                            `${med.id}-upcoming`
                         )
                     }
                 }
 
-                // 2. Missed Dose Reminder (30 mins after scheduled time)
+                // 2. On-Time Reminder (at schedule time)
+                const diffOnTime = (now.getTime() - scheduleTime.getTime()) / 60000
+                if (diffOnTime >= 0 && diffOnTime < 2 && !isTaken) {
+                    const notifKey = `${med.id}-ontime-${dateStr}`
+                    if (!firedRef.current.has(notifKey)) {
+                        firedRef.current.add(notifKey)
+                        showNotification(
+                            `Time for ${med.name}`,
+                            `It is ${med.schedule}. Please take your dose now.`,
+                            `${med.id}-ontime`
+                        )
+                    }
+                }
+
+                // 3. Missed Dose Reminder (30 mins after scheduled time)
                 const missedThreshold = addMinutes(scheduleTime, 30)
                 const diffMissed = (now.getTime() - missedThreshold.getTime()) / 60000
                 if (diffMissed >= 0 && diffMissed < 60 && !isTaken) {
@@ -89,7 +149,7 @@ export const NotificationManager = () => {
                     }
                 }
 
-                // 3. Low Supply Alert (once at 10:00 range)
+                // 4. Low Supply Alert (once at 10:00 range)
                 if (med.remainingPills < 5 && med.remainingPills > 0 && currentTime === '10:00') {
                     const notifKey = `${med.id}-low-${dateStr}`
                     if (!firedRef.current.has(notifKey)) {
@@ -97,31 +157,17 @@ export const NotificationManager = () => {
                         showNotification(
                             `Low Supply: ${med.name}`,
                             `Only ${med.remainingPills} pills left. Time to restock!`,
-                            med.id
+                            `${med.id}-low`
                         )
                     }
                 }
             })
         }
 
-        // Listener for manual test notifications
-        const handleTest = () => {
-            console.log('🧪 Test event received in NotificationManager');
-            showNotification(
-                "Test Alert 💊",
-                "Your medication notifications are working correctly!",
-                "test-notif"
-            )
-        }
-        window.addEventListener('test-notification', handleTest)
-
         checkReminders()
-        const interval = setInterval(checkReminders, 30000) // Check every 30s for more precision
-        return () => {
-            clearInterval(interval)
-            window.removeEventListener('test-notification', handleTest)
-        }
-    }, [notificationsEnabled, medicines, takenToday])
+        const interval = setInterval(checkReminders, 30000) 
+        return () => clearInterval(interval)
+    }, [notificationsEnabled, medicines, takenToday, localPermission])
 
 
     const requestPermission = async () => {
@@ -130,6 +176,10 @@ export const NotificationManager = () => {
         setShowPermissionUI(false)
         if (permission === 'granted') {
             setNotificationsEnabled(true)
+            // Trigger an immediate check so user sees it works
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('test-notification'));
+            }, 500);
         }
     }
 

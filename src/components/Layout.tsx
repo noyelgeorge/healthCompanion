@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Navigate } from "react-router-dom"
 import { BottomNav } from "./BottomNav"
 import { useAppStore } from "../store/useAppStore"
-import NotificationManager from "./NotificationManager"
+import { NotificationManager } from "../medicine/components/NotificationManager"
 import { cn } from "../lib/utils"
 import { Toaster } from 'sonner'
 

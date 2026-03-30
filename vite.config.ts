@@ -6,13 +6,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
-      workbox: {
-        navigateFallback: 'index.html',
+      injectManifest: {
+        swDest: 'dist/sw.js',
         globPatterns: ['**/*.{js,css,html,png,svg,ico,webp}'],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       },
       includeAssets: ['icon.png', 'favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {

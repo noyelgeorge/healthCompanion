@@ -10,7 +10,7 @@ export interface Medicine {
     remainingPills: number
     notes?: string
     assignedTo: string // 'Me' or Family Member name
-    reminderOffsetMinutes?: number // Fix 6: 0 = on time, 5/10/15 = before
+    reminderOffsetMinutes?: number // Default is now 15
 }
 
 export interface MedicineBadge {
@@ -50,7 +50,6 @@ interface MedicineState {
     setNotificationsEnabled: (enabled: boolean) => void
     setHasRequestedPermission: (requested: boolean) => void
     updateAdherence: (date: string, taken: number, total: number) => void
-    updateMedicineOffset: (id: string, offset: number) => void // Fix 6
     markBadgeSeen: (id: string) => void
 }
 
@@ -60,6 +59,21 @@ const INITIAL_BADGES: MedicineBadge[] = [
     { id: 'week-warrior', name: 'Week Warrior', description: 'Perfect week of adherence', icon: '🛡️' },
     { id: 'perfect-day', name: 'Perfect Day', description: 'Take all scheduled doses in one day', icon: '🌟' },
 ]
+
+// No background sync needed for foreground-only notifications
+const localPersistStorage = {
+    getItem: (name: string) => {
+        const item = localStorage.getItem(name);
+        return item ? JSON.parse(item) : null;
+    },
+    setItem: (name: string, value: any) => {
+        localStorage.setItem(name, JSON.stringify(value));
+    },
+    removeItem: (name: string) => {
+        localStorage.removeItem(name);
+    }
+};
+
 
 export const useMedicineStore = create<MedicineState>()(
     persist(
@@ -74,17 +88,23 @@ export const useMedicineStore = create<MedicineState>()(
             hasRequestedPermission: false,
             adherenceHistory: [],
 
-            addMedicine: (med) => set((state) => ({
-                medicines: [...state.medicines, { ...med, id: crypto.randomUUID() }]
-            })),
+            addMedicine: (med) => {
+                set((state) => ({
+                    medicines: [...state.medicines, { ...med, id: crypto.randomUUID(), reminderOffsetMinutes: 15 }]
+                }));
+            },
 
-            removeMedicine: (id) => set((state) => ({
-                medicines: state.medicines.filter(m => m.id !== id)
-            })),
+            removeMedicine: (id) => {
+                set((state) => ({
+                    medicines: state.medicines.filter(m => m.id !== id)
+                }));
+            },
 
-            updateMedicine: (id, updates) => set((state) => ({
-                medicines: state.medicines.map(m => m.id === id ? { ...m, ...updates } : m)
-            })),
+            updateMedicine: (id, updates) => {
+                set((state) => ({
+                    medicines: state.medicines.map(m => m.id === id ? { ...m, ...updates } : m)
+                }));
+            },
 
             // Fix 2: auto-call updateAdherence after marking taken
             markTaken: (id) => {
@@ -150,10 +170,6 @@ export const useMedicineStore = create<MedicineState>()(
                 }
             }),
 
-            // Fix 6: set reminder offset per medicine
-            updateMedicineOffset: (id, offset) => set((state) => ({
-                medicines: state.medicines.map(m => m.id === id ? { ...m, reminderOffsetMinutes: offset } : m)
-            })),
 
             markBadgeSeen: (id) => set((state) => ({
                 badges: state.badges.map(b => b.id === id ? { ...b, seenAt: new Date().toISOString() } : b)
@@ -193,7 +209,8 @@ export const useMedicineStore = create<MedicineState>()(
             }
         }),
         {
-            name: 'local-medicine-storage'
+            name: 'local-medicine-storage',
+            storage: localPersistStorage
         }
     )
 )

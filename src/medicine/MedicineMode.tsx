@@ -17,7 +17,6 @@ import { CameraCapture } from '../components/log/CameraCapture'
 import { FamilySelector } from './components/FamilySelector'
 import { AdherenceStats } from './components/AdherenceStats'
 import { NotificationSettings } from './components/NotificationSettings'
-import { NotificationManager } from './components/NotificationManager'
 
 type Tab = 'basket' | 'review' | 'stats'
 
@@ -46,8 +45,7 @@ export default function MedicineMode() {
         updateMedicine, // Fix 2
         addFamilyMember,
         setNotificationsEnabled,
-        resetDaily,
-        updateMedicineOffset  // Fix 6
+        resetDaily
     } = useMedicineStore()
 
     useEffect(() => {
@@ -129,7 +127,6 @@ export default function MedicineMode() {
 
     return (
         <div className="page-container bg-slate-50 dark:bg-slate-950 pb-32 min-h-screen">
-            <NotificationManager />
 
             {/* Header */}
             <div className="sticky top-0 z-30 flex items-center justify-between p-4 glass dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
@@ -325,8 +322,6 @@ export default function MedicineMode() {
                                                             notes={med.notes}
                                                             isTaken={takenToday.some(t => t.medId === med.id)}
                                                             onTake={() => markTaken(med.id)}
-                                                            reminderOffsetMinutes={med.reminderOffsetMinutes ?? 0}
-                                                            onOffsetChange={(offset) => updateMedicineOffset(med.id, offset)}
                                                             onRemove={() => removeMedicine(med.id)} // Fix 1
                                                             onUpdateStock={(newTotal, newRemaining) => {
                                                                 updateMedicine(med.id, { totalPills: newTotal, remainingPills: newRemaining })

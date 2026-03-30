@@ -3,13 +3,6 @@ import { motion } from 'framer-motion'
 import { Pill, Clock, Check, Trash2, Pencil } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-// Reminder offset options (Fix 6)
-const OFFSET_OPTIONS = [
-    { label: 'On time', value: 0 },
-    { label: '5 min before', value: 5 },
-    { label: '10 min before', value: 10 },
-    { label: '15 min before', value: 15 },
-]
 
 interface MedicineCardProps {
     name: string
@@ -19,10 +12,7 @@ interface MedicineCardProps {
     notes?: string
     isTaken: boolean
     onTake: () => void
-    // Fix 6: optional reminder offset
-    reminderOffsetMinutes?: number
-    onOffsetChange?: (offset: number) => void
-    // Fix 1: optional remove from basket
+    // reminderOffsetMinutes is now hardcoded to 15 in the system logic
     onRemove?: () => void
     onUpdateStock?: (newTotal: number, newRemaining: number) => void
     onUpdateSchedule?: (newTime: string) => void
@@ -36,8 +26,6 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({
     notes,
     isTaken,
     onTake,
-    reminderOffsetMinutes = 0,
-    onOffsetChange,
     onRemove,
     onUpdateStock,
     onUpdateSchedule
@@ -157,21 +145,6 @@ export const MedicineCard: React.FC<MedicineCardProps> = ({
                     )}
                 </div>
 
-                {/* Fix 6: per-medicine reminder offset selector */}
-                {onOffsetChange && (
-                    <div className="flex items-center justify-between px-1">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Remind</span>
-                        <select
-                            value={reminderOffsetMinutes}
-                            onChange={e => onOffsetChange(Number(e.target.value))}
-                            className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-transparent border-none max-w-[120px] truncate focus:outline-none cursor-pointer"
-                        >
-                            {OFFSET_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
 
                 <button
                     onClick={onTake}
