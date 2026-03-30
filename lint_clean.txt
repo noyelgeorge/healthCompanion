@@ -1,0 +1,85 @@
+﻿
+> pwa@0.0.0 lint
+> eslint .
+
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\components\NotificationManager.tsx
+  79:21  error  Empty block statement                                                                                                no-empty
+  82:21  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  84:25  error  Empty block statement                                                                                                no-empty
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\components\log\AddFoodForm.tsx
+  36:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\components\log\AddFoodForm.tsx:36:13
+  34 |     useEffect(() => {
+  35 |         if (initialValues) {
+> 36 |             setName(initialValues.name || "")
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  37 |             setCalories(initialValues.calories !== undefined ? initialValues.calories.toString() : "")
+  38 |             setProtein(initialValues.protein !== undefined ? initialValues.protein.toString() : "")
+  39 |             setCarbs(initialValues.carbs !== undefined ? initialValues.carbs.toString() : "")  react-hooks/set-state-in-effect
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\components\log\CameraCapture.tsx
+  69:8  warning  React Hook useEffect has a missing dependency: 'startCamera'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\lib\ai.ts
+  145:21  error  Empty block statement                     no-empty
+  282:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\lib\firebase.ts
+  23:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\Auth.tsx
+   54:8    warning  React Hook useEffect has a missing dependency: 'quotes.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   72:25   error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  104:25   error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  170:25   error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  367:98   error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  413:101  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  431:88   error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\Log.tsx
+  95:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\MedicineMode.tsx
+   29:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:18  error  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  151:18  error  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\Plans.tsx
+  81:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\Settings.tsx
+  30:22  error  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  63:18  error  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\pages\Stats.tsx
+  108:8  warning  React Hook useEffect has missing dependencies: 'data' and 'user'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\services\medicine.ts
+   15:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\services\social.ts
+   72:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\NOYEL\pwa_food\pwa_food\pwa\src\store\useAppStore.ts
+  225:21  error  'newStreaks' is never reassigned. Use 'const' instead  prefer-const
+  509:30  error  'e' is defined but never used                          @typescript-eslint/no-unused-vars
+
+Γ£û 34 problems (31 errors, 3 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

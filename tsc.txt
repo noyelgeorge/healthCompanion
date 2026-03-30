@@ -1,0 +1,2 @@
+﻿src/medicine/components/MedicineCard.tsx(52,11): error TS2451: Cannot redeclare block-scoped variable 'hasStock'.
+src/medicine/components/MedicineCard.tsx(55,11): error TS2451: Cannot redeclare block-scoped variable 'hasStock'.

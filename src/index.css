@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    body {
+        @apply bg-slate-200 dark:bg-slate-900 text-slate-900 font-sans antialiased transition-colors duration-300;
+    }
+
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .pl-safe {
+        padding-left: env(safe-area-inset-left, 0px);
+    }
+
+    .pr-safe {
+        padding-right: env(safe-area-inset-right, 0px);
+    }
+}
+
+/* Mobile Container Constraints */
+.mobile-container {
+    @apply w-full max-w-[430px] mx-auto h-[100dvh] bg-slate-50 dark:bg-slate-950 relative shadow-2xl flex flex-col overflow-hidden;
+}
+
+.page-container {
+    @apply px-6 pt-6 pb-32 relative overflow-hidden;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+    @apply bg-white/40 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/20 transition-all duration-300;
+}
+
+.dark .glass {
+    @apply bg-slate-900/40 border-slate-800/50 shadow-none;
+}
+
+.glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-slate-800 shadow-2xl transition-all duration-300;
+}
+
+.dark .glass-dark {
+    @apply bg-slate-950/80 border-slate-900;
+}
+
+.card {
+    @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-4 transition-all duration-300;
+}
+
+.dark .card {
+    @apply bg-slate-900 border-slate-800 text-slate-100;
+}
+
+/* Core Animations */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+@keyframes cinematic-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(1.05);
+        filter: blur(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes slow-breath {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.5;
+    }
+}
+
+@keyframes subtle-slide-up {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes loading-bar {
+    0% {
+        left: -100%;
+    }
+
+    50% {
+        left: 0;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* Animation Classes */
+.animate-shimmer {
+    animation: shimmer 2.5s infinite;
+}
+
+.animate-cinematic-fade-in {
+    animation: cinematic-fade-in 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slow-breath {
+    animation: slow-breath 8s ease-in-out infinite;
+}
+
+.animate-subtle-slide-up {
+    animation: subtle-slide-up 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-loading-bar {
+    position: relative;
+    animation: loading-bar 2s ease-in-out infinite;
+}
+
+/* Legacy Support (If needed elsewhere) */
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+.animate-blob {
+    animation: blob 7s infinite;
+}
